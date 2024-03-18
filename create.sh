@@ -1,37 +1,56 @@
 #!/usr/bin/env sh
 
-rootDir="$(dirname "$(realpath "$0")")"
-SEARCHER="$rootDir/search.sh"
-PREVIEWER="$rootDir/preview.sh"
-EXCLUDE_PATTERN='#sampleinput2,#sampleoutput2,#sampleinput3,#sampleoutput3,#sampleinput4,#sampleoutput4,#sampleinput5,#sampleoutput5,#sampleinput6,#sampleoutput6,#sampleinput7,#sampleoutput7,#sampleinput8,#sampleoutput8,#sampleinput9,#sampleoutput9,#sampleinput10,#sampleoutput10'
+scriptDir=$(dirname "$(realpath "$0")")
+rootDir=$(dirname "$scriptDir")
+
+SEARCHER="$scriptDir/search.sh"
+FETCHER="$scriptDir/_fetcher.sh"
+LINKER="$scriptDir/use.sh"
+EXCLUDE_PATTERN='#problem-info tr > :nth-child(n+3),#hint,#sampleinput2,#sampleoutput2,#sampleinput3,#sampleoutput3,#sampleinput4,#sampleoutput4,#sampleinput5,#sampleoutput5,#sampleinput6,#sampleoutput6,#sampleinput7,#sampleoutput7,#sampleinput8,#sampleoutput8,#sampleinput9,#sampleoutput9,#sampleinput10,#sampleoutput10'
 
 if [ -z "$1" ]; then
 	problemId=$("$SEARCHER" | cut -f2)
 else
 	problemId=$1
 fi
-[ "$problemId" -ge 0 ] 2>/dev/null || exit 1
+[ "$problemId" -gt 0 ] 2>/dev/null || exit 1
+
+srcDir="$rootDir/source/$problemId"
+cacheDir="$rootDir/cache/$problemId"
+[ -d "$srcDir" ] || mkdir -p "$srcDir"
+[ -d "$cacheDir" ] || mkdir -p "$cacheDir"
+
+rawContent=$("$FETCHER" "$problemId" "$cacheDir")
+
+sampleDataCount="$(printf '%s' "$rawContent" |
+	hxselect -i '.sampledata' |
+	hxcount | tail -n1 |
+	awk '{print $1/2}')"
+
+i=1
+while [ $i -lt "$sampleDataCount" ]; do
+	printf '%s\n' "$(printf '%s' "$rawContent" | hxselect -i -c "#sample-input-$i" | tr -d '\r')" >"$srcDir/input$i.txt"
+	printf '%s\n' "$(printf '%s' "$rawContent" | hxselect -i -c "#sample-output-$i" | tr -d '\r')" >"$srcDir/output$i.txt"
+	i=$((i + 1))
+done
 
 link="https://www.acmicpc.net/problem/$problemId"
-rawContent=$("$PREVIEWER" "$problemId" | sed 's@<img[^\/]*src="\([^"]*\)"[^<]*\>@\1\n@g')
-sampleDataCount="$(
-	printf "%s" "$rawContent" | hxselect -i '.sampledata' | hxcount | tail -n1 | awk '{print $1/2}'
-)"
-description="$(printf "%s" "$rawContent" | hxremove "$EXCLUDE_PATTERN" | pandoc -f html -t plain)"
-
-printf "%s" "$rawContent" | hxselect -i -c '#sample-input-1' >".input.txt"
-printf "%s" "$rawContent" | hxselect -i -c '#sample-output-1' >".output.txt"
-
-filename="b$problemId"
-if [ -e "$filename.cpp" ] || [ -L "$filename.cpp" ]; then
-	i=1
-	while [ -e "$filename-$i.cpp" ] || [ -L "$filename-$i.cpp" ]; do
-		i=$((i + 1))
-	done
-	filename="$filename-$i"
+cache_md="$cacheDir/preview.md"
+if [ -r "$cache_md" ]; then
+	description=$(pandoc -f gfm -t plain "$cache_md")
+else
+	description="$(printf '%s' "$rawContent" | hxremove "$EXCLUDE_PATTERN" | pandoc -f html -t plain)"
 fi
 
-printf '%s\n\n%s\n\n' "$link" "$description" |
-	sed 's#^.#// &#' |
-	cat - "$rootDir/template_bj.cpp" >"$filename.cpp"
-ln -sf "$filename.cpp" ".current.cpp"
+filename="solution"
+i=1
+while [ -f "$srcDir/$filename-$i.cpp" ]; do
+	i=$((i + 1))
+done
+filename="$filename-$i"
+
+docs=$(printf '%s\n%s' "$link" "$description" | sed 's@^@* @')
+printf '/**\n%s\n*/\n\n' "$docs" |
+	cat - "$scriptDir/template.cpp" >"$srcDir/$filename.cpp"
+
+"$LINKER" "$srcDir/$filename.cpp"
