@@ -20,7 +20,7 @@ cacheDir="$rootDir/cache/$problemId"
 [ -d "$srcDir" ] || mkdir -p "$srcDir"
 [ -d "$cacheDir" ] || mkdir -p "$cacheDir"
 
-rawContent=$("$FETCHER" "$problemId" "$cacheDir")
+rawContent=$("$FETCHER" "$problemId" "$cacheDir") || exit 1
 
 sampleDataCount="$(printf '%s' "$rawContent" |
 	hxselect -i '.sampledata' |
@@ -28,7 +28,7 @@ sampleDataCount="$(printf '%s' "$rawContent" |
 	awk '{print $1/2}')"
 
 i=1
-while [ $i -lt "$sampleDataCount" ]; do
+while [ $i -le "$sampleDataCount" ]; do
 	printf '%s\n' "$(printf '%s' "$rawContent" | hxselect -i -c "#sample-input-$i" | tr -d '\r')" >"$srcDir/input$i.txt"
 	printf '%s\n' "$(printf '%s' "$rawContent" | hxselect -i -c "#sample-output-$i" | tr -d '\r')" >"$srcDir/output$i.txt"
 	i=$((i + 1))
