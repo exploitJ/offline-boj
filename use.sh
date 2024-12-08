@@ -5,9 +5,9 @@ rootDir=$(dirname "$scriptDir")
 SEARCHER="$scriptDir/_src_search.sh"
 
 if [ -z "$1" ]; then
-	source=$("$SEARCHER")
+    source=$("$SEARCHER")
 else
-	source=$1
+    source=$1
 fi
 [ -f "$source" ] 2>/dev/null || exit 1
 source=$(realpath "$source")
