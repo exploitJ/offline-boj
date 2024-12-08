@@ -39,7 +39,7 @@ if [ ! -r "$cache_md" ]; then
     fi
 fi
 
-if [ -d "$cacheDir"/media ]; then
+if [ -d "$cacheDir"/media ] && [ -n "$FZF_PREVIEW_LINES" ]; then
     for img in "$cacheDir"/media/*; do
         kitty icat \
             --transfer-mode=stream \
