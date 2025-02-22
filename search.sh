@@ -8,7 +8,7 @@ SEARCH_PREFIX="$scriptDir/_boj_search.sh"
 INITIAL_QUERY="$1"
 
 if ! nc -zw1 www.acmicpc.net 443 >/dev/null 2>&1; then
-    FZF_DEFAULT_COMMAND="fd --type directory --max-depth=2 --min-depth=2 --color=never --full-path '${rootDir}/cache/' --exec=basename" \
+    FZF_DEFAULT_COMMAND="fd --type directory --exact-depth=1 --color=never --exec='basename' . '${rootDir}/cache'" \
         fzf --query "$INITIAL_QUERY" \
         --preview-window 'right,70%,wrap,<80(up,70%)' \
         --preview "$PREVIEWER {1}"
