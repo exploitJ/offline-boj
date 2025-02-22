@@ -39,14 +39,21 @@ if [ ! -r "$cache_md" ]; then
     fi
 fi
 
-if [ -d "$cacheDir"/media ] && [ -n "$FZF_PREVIEW_LINES" ]; then
+if [ -d "$cacheDir"/media ]; then
     for img in "$cacheDir"/media/*; do
-        kitty icat \
-            --transfer-mode=stream \
-            --unicode-placeholder \
-            --stdin=no \
-            --place="${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@${FZF_PREVIEW_LEFT}x${FZF_PREVIEW_TOP}" \
-            "$img"
+        if [ -n "$FZF_PREVIEW_LINES" ]; then
+            kitty icat \
+                --transfer-mode=stream \
+                --unicode-placeholder \
+                --stdin=no \
+                --place="${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@${FZF_PREVIEW_LEFT}x${FZF_PREVIEW_TOP}" \
+                "$img"
+        else
+            kitty icat \
+                --stdin=no \
+                --align=left "$img"
+
+        fi
         printf '\n'
     done
 fi
